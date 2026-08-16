@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>西意十三日环游 · 臻选行记</title>
+<link rel="stylesheet" href="leaflet.css" />
+<style>
+:root{
+  --bg:#FBF9F6; --bg-2:#F4EFE8; --card:#FFFFFF; --ink:#1C1F21; --muted:#6B7280;
+  --teal:#1A434E; --teal-soft:#E4ECED; --accent:#D95D39; --accent-soft:#FCE9E2;
+  --border:#EAE3D9; --olive:#2E5A44; --olive-soft:#E7EFE9;
+  --blue:#2B5F8A; --blue-soft:#E7EFF6; --purple:#6B4E8E; --purple-soft:#F0EAF6;
+  --orange:#C26A1E; --orange-soft:#FBEFDF; --shadow:0 2px 14px rgba(28,31,33,.06);
+  --font-serif:"Songti SC","Noto Serif SC","STSong","Georgia",serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+[data-theme="dark"]{
+  --bg:#121416; --bg-2:#181B1E; --card:#1C2024; --ink:#E8E6E1; --muted:#9AA1A8;
+  --teal:#86BCC6; --teal-soft:#1E2A2E; --accent:#E8754F; --accent-soft:#2E211C;
+  --border:#2A2F34; --olive:#7FB99A; --olive-soft:#1E2A24;
+  --blue:#7FA9D0; --blue-soft:#1E2832; --purple:#B49AD0; --purple-soft:#271F31;
+  --orange:#DBA468; --orange-soft:#2C2417; --shadow:0 2px 16px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);line-height:1.65;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s}
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:9999;transition:width .08s linear}
+.wrap{max-width:600px;margin:0 auto;min-height:100vh;position:relative}
+
+/* header */
+header{position:sticky;top:0;z-index:1000;background:var(--bg);
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.hrow{display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
+.brand{font-family:var(--font-serif);font-size:1.02rem;font-weight:700;color:var(--teal);letter-spacing:.5px}
+.theme-btn{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:1px solid var(--border);
+  background:var(--card);color:var(--ink);font-size:1.15rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .2s}
+.theme-btn:active{transform:scale(.9)}
+.nav{display:flex;gap:2px;padding:0 8px 10px;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{flex:0 0 auto;color:var(--muted);text-decoration:none;font-size:.82rem;font-weight:500;
+  padding:6px 13px;border-radius:16px;transition:.25s;white-space:nowrap}
+.nav a.active{color:var(--teal);background:var(--teal-soft);font-weight:600}
+
+/* hero */
+.hero{padding:30px 20px 18px;text-align:center}
+.hero .kicker{font-size:.72rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;font-weight:600}
+.hero h1{font-family:var(--font-serif);font-size:1.75rem;line-height:1.3;margin:8px 0 6px;color:var(--ink)}
+.hero .route{font-size:.9rem;color:var(--muted);margin:6px 0 12px}
+.hero .route b{color:var(--teal)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px}
+.chip{font-size:.76rem;padding:5px 12px;border-radius:14px;background:var(--card);border:1px solid var(--border);color:var(--muted)}
+.chip b{color:var(--ink)}
+
+/* section */
+section{padding:26px 16px}
+.sec-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+.sec-head .no{font-family:var(--font-serif);color:var(--accent);font-size:1.3rem;font-weight:700}
+.sec-head h2{font-family:var(--font-serif);font-size:1.32rem;color:var(--ink);font-weight:700}
+.sec-head .sub{font-size:.8rem;color:var(--muted)}
+
+/* fixed transport strip */
+.transport-strip{display:grid;gap:10px}
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
+.tcard .ic{flex:0 0 40px;height:40px;border-radius:10px;background:var(--teal-soft);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.tcard .bd{flex:1;min-width:0}
+.tcard .bd .t1{font-size:.92rem;font-weight:600}
+.tcard .bd .t2{font-size:.78rem;color:var(--muted);margin-top:2px}
+.tcard .badge-booked{flex:0 0 auto;font-size:.68rem;padding:3px 9px;border-radius:10px;background:var(--olive-soft);color:var(--olive);font-weight:600}
+
+/* map */
+#map{height:380px;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow);z-index:1}
+.map-legend{display:flex;gap:10px;margin-top:10px;font-size:.76rem;color:var(--muted);flex-wrap:wrap}
+.map-ctrl{display:flex;gap:8px;margin-bottom:10px}
+.map-ctrl button{font-size:.78rem;padding:7px 14px;border-radius:14px;border:1px solid var(--border);
+  background:var(--card);color:var(--ink);cursor:pointer;font-weight:500}
+.map-ctrl button:hover{color:var(--teal);border-color:var(--teal)}
+.map-ctrl button.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.leaflet-popup-content{font-family:var(--font-sans);font-size:.85rem;line-height:1.5}
+.marker-day{background:var(--teal);color:#fff;border:2px solid var(--accent);border-radius:50%;
+  width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+
+/* day timeline */
+.day-card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);transition:.25s}
+.day-card.scrolled{outline:2px solid var(--accent);outline-offset:2px}
+.day-head{display:flex;align-items:center;gap:12px;padding:14px 15px;cursor:pointer;user-select:none}
+.day-head .dnum{flex:0 0 38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-weight:700;font-size:1.05rem}
+.day-head .dt{flex:1;min-width:0}
+.day-head .dt .dtitle{font-weight:600;font-size:.95rem;line-height:1.35}
+.day-head .dt .dmeta{font-size:.76rem;color:var(--muted);margin-top:1px}
+.day-head .darrow{flex:0 0 auto;color:var(--muted);transition:transform .3s;font-size:1rem}
+.day-card.open .darrow{transform:rotate(180deg)}
+.day-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.day-body-inner{padding:2px 15px 16px;border-top:1px dashed var(--border)}
+.day-body-inner .hotel-line{margin:10px 0 12px;font-size:.8rem;color:var(--muted);background:var(--bg-2);padding:8px 12px;border-radius:10px}
+.day-body-inner .hotel-line b{color:var(--teal)}
+.tl{position:relative;padding-left:18px}
+.tl:before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:var(--border)}
+.tl-item{position:relative;padding:4px 0 10px}
+.tl-item:before{content:"";position:absolute;left:-17px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.tl-item .time{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.tl-item .txt{font-size:.88rem;line-height:1.5;margin-top:1px}
+.badge{display:inline-block;font-size:.66rem;padding:1px 7px;border-radius:8px;font-weight:600;margin-right:5px;vertical-align:1px}
+.bd-flight{background:var(--blue-soft);color:var(--blue)}
+.bd-transport{background:var(--teal-soft);color:var(--teal)}
+.bd-hotel{background:var(--purple-soft);color:var(--purple)}
+.bd-dining{background:var(--orange-soft);color:var(--orange)}
+.bd-attraction{background:var(--olive-soft);color:var(--olive)}
+.tl-toolbar{display:flex;gap:8px;margin-bottom:12px}
+.tl-toolbar button{font-size:.78rem;padding:7px 14px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--ink);cursor:pointer;font-weight:500}
+.tl-toolbar button:hover{color:var(--accent);border-color:var(--accent)}
+
+/* hotel / dining cards */
+.grid2{display:grid;gap:12px}
+.city-block{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px;box-shadow:var(--shadow)}
+.city-block h3{font-family:var(--font-serif);font-size:1.05rem;color:var(--teal);margin-bottom:2px}
+.city-block .city-sub{font-size:.76rem;color:var(--muted);margin-bottom:10px}
+.hotel-item,.dine-item{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border)}
+.hotel-item:first-of-type,.dine-item:first-of-type{border-top:none}
+.hotel-item .nm{flex:1;min-width:0}
+.hotel-item .nm .n{font-size:.88rem;font-weight:600}
+.hotel-item .nm .d{font-size:.75rem;color:var(--muted);margin-top:1px}
+.hotel-item .pr{flex:0 0 auto;font-size:.82rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dine-item .nm .n{font-size:.88rem;font-weight:600}
+.dine-item .nm .d{font-size:.75rem;color:var(--muted);margin-top:1px}
+.dine-item .pr{flex:0 0 auto;font-size:.8rem;font-weight:700;color:var(--olive);white-space:nowrap;font-variant-numeric:tabular-nums}
+.note-line{font-size:.78rem;color:var(--muted);background:var(--bg-2);border-radius:10px;padding:9px 12px;margin-top:10px;line-height:1.55}
+.note-line b{color:var(--accent)}
+
+/* tickets table */
+.ticket-group{margin-bottom:16px}
+.ticket-group h3{font-family:var(--font-serif);font-size:1.02rem;color:var(--teal);margin-bottom:8px;padding-left:2px}
+.trow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--border)}
+.trow:first-of-type{border-top:none}
+.trow .tn{flex:1;min-width:0}
+.trow .tn .n{font-size:.88rem;font-weight:600}
+.trow .tn .d{font-size:.75rem;color:var(--muted);margin-top:1px}
+.trow .tp{flex:0 0 auto;text-align:right;font-size:.84rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.trow .tp small{display:block;font-weight:400;color:var(--muted);font-size:.7rem}
+.book-badge{display:inline-block;font-size:.66rem;padding:1px 7px;border-radius:8px;font-weight:600;background:var(--orange-soft);color:var(--orange);margin-left:5px}
+
+/* budget */
+.budget{display:grid;gap:10px}
+.brow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 15px}
+.brow .bk{font-size:.9rem;font-weight:500}
+.brow .bv{font-size:.9rem;font-weight:700;color:var(--teal);font-variant-numeric:tabular-nums}
+.brow.total{border:1.5px solid var(--accent)}
+.brow.total .bv{color:var(--accent);font-size:1.05rem}
+
+/* tips */
+.tips{display:grid;gap:10px}
+.tip{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;font-size:.85rem}
+.tip b{color:var(--teal)}
+
+footer{padding:26px 16px calc(26px + var(--safe-b));text-align:center;color:var(--muted);font-size:.72rem;line-height:1.7;border-top:1px solid var(--border)}
+footer .src{margin-top:8px;font-size:.68rem;word-break:break-all;opacity:.8}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="wrap">
+  <header>
+    <div class="hrow">
+      <div class="brand">西意十三日 · 臻选行记</div>
+      <button class="theme-btn" id="themeBtn" aria-label="切换主题" title="切换深色/浅色">🌙</button>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#overview" data-sec="overview">概览</a>
+      <a href="#map" data-sec="map">路线图</a>
+      <a href="#itinerary" data-sec="itinerary">每日行程</a>
+      <a href="#hotels" data-sec="hotels">住宿</a>
+      <a href="#dining" data-sec="dining">餐饮</a>
+      <a href="#tickets" data-sec="tickets">门票</a>
+      <a href="#budget" data-sec="budget">预算</a>
+    </nav>
+  </header>
+
+  <section class="hero" id="overview">
+    <div class="kicker">Spain &amp; Italy · 2026</div>
+    <h1>成都出发 · 西班牙 + 意大利<br>13 天环游</h1>
+    <div class="route">成都 → <b>马德里</b> → <b>巴塞罗那</b> → <b>威尼斯</b> → <b>佛罗伦萨</b>(比萨·五渔村) → <b>罗马</b> → 成都</div>
+    <div class="chips">
+      <span class="chip"><b>2026-09-25</b> 周五 出发</span>
+      <span class="chip"><b>2026-10-08</b> 周四 抵成都</span>
+      <span class="chip">全程 <b>13 天 12 晚</b></span>
+      <span class="chip"><b>3–4 人</b>同行</span>
+    </div>
+  </section>
+
+  <section id="transport">
+    <div class="sec-head"><span class="no">①</span><h2>已订固定交通</h2></div>
+    <div class="transport-strip" id="transportStrip"></div>
+  </section>
+
+  <section id="map">
+    <div class="sec-head"><span class="no">②</span><h2>路线图 · 每天一点</h2><span class="sub">点击点位跳转当日行程</span></div>
+    <div class="map-ctrl">
+      <button class="tile-btn" id="tb0" onclick="switchTile(0)">OSM 标准</button>
+      <button class="tile-btn" id="tb1" onclick="switchTile(1)">高德·国内</button>
+      <button class="tile-btn" id="tb2" onclick="switchTile(2)">Esri 备用</button>
+      <button onclick="fitAll()">重置视图</button>
+    </div>
+    <div id="map"></div>
+    <div class="map-legend">📍 数字为天数 · 橙线为行进路线 · 同一城市多天点位重叠</div>
+  </section>
+
+  <section id="itinerary">
+    <div class="sec-head"><span class="no">③</span><h2>每日行程 · 逐小时</h2></div>
+    <div class="tl-toolbar">
+      <button onclick="setAll(true)">全部展开</button>
+      <button onclick="setAll(false)">全部折叠</button>
+    </div>
+    <div id="dayList"></div>
+  </section>
+
+  <section id="hotels">
+    <div class="sec-head"><span class="no">④</span><h2>住宿 · 点名酒店</h2><span class="sub">参考价，随日期浮动</span></div>
+    <div class="grid2" id="hotelList"></div>
+    <div class="note-line" style="margin-top:12px">💡 <b>3–4 人建议</b>：通常需 2 间双人房，或选三/四人间／连通房——佛罗伦萨 <b>Hotel Palazzo dal Borgo</b> 有三/四人间，巴塞罗那 <b>Room Mate Anna</b> 有连通房。</div>
+  </section>
+
+  <section id="dining">
+    <div class="sec-head"><span class="no">⑤</span><h2>餐饮 · 推荐餐厅</h2><span class="sub">人均参考价</span></div>
+    <div class="grid2" id="dineList"></div>
+    <div class="note-line" style="margin-top:12px">🍽️ <b>餐标参考</b>：早餐 €3–6 · 午餐 €12–18 · 晚餐 €20–40 → 约 <b>€40–70/人/天</b>。点餐避开主广场正对游客店，往里走一两个街区更地道划算。</div>
+  </section>
+
+  <section id="tickets">
+    <div class="sec-head"><span class="no">⑥</span><h2>门票 · 官方价格</h2><span class="sub">每成人 · 提前预约可省心</span></div>
+    <div id="ticketList"></div>
+    <div class="note-line">🔒 <b>必须提前抢票</b>（会售罄）：圣家堂、桂尔公园、比萨斜塔、斗兽场 Full Experience（地下层提前 30 天开售即抢）、梵蒂冈博物馆、乌菲兹/学院美术馆。<br>🛒 <b>闲鱼/第三方对比</b>：官网实名购票即为最低价最可靠；梵蒂冈、乌菲兹、斗兽场、圣家堂为实名票（需护照姓名），闲鱼代订通常加价 20–50% 且有名字不符无法入场风险——仅官网售罄时才考虑第三方并核实姓名。</div>
+  </section>
+
+  <section id="budget">
+    <div class="sec-head"><span class="no">⑦</span><h2>预算估算 · 3–4 人</h2><span class="sub">不含机票/已订交通</span></div>
+    <div class="budget" id="budgetList"></div>
+  </section>
+
+  <section id="tips">
+    <div class="sec-head"><span class="no">⑧</span><h2>实用贴士</h2></div>
+    <div class="tips">
+      <div class="tip">🌤 <b>10 月天气</b>：马德里/巴塞罗那 18–27°C，意大利 12–26°C，早晚需薄外套，白天轻便秋装。</div>
+      <div class="tip">🔌 <b>插座</b>：西班牙/意大利均为欧标双圆头（220V），自备转换插头。</div>
+      <div class="tip">📇 <b>证件</b>：护照随身，斗兽场/梵蒂冈/乌菲兹等实名票需核对姓名。</div>
+      <div class="tip">🎫 <b>提前订</b>：火车提前 30 天在 Trenitalia/Italo 购票可省 50%+；旺季门票提前 2–4 周官网抢。</div>
+      <div class="tip">🛡 <b>安全</b>：巴塞罗那/罗马地铁与景点区防扒手，手机不放后袋、背包前背。</div>
+      <div class="tip">💳 <b>支付</b>：欧洲以刷卡为主（Visa/Master），备少量现金（€50–100）应对零碎消费。</div>
+    </div>
+  </section>
+
+  <footer>
+    <div>本页所有价格/酒店/餐厅均经官方来源与多平台交叉核实（2026-08），出发前请以官网为准。</div>
+    <div class="src">来源：sagradafamilia.org · parkguell.barcelona · casabatllo.es · lapedrera.com · museodelprado.es · patrimonionacional.es · museoreinasofia.es · palazzoducale.visitmuve.it · veneziaunica.it · opapisa.it · uffizi.it · galleriaaccademiafirenze.it · duomo.firenze.it · colosseo.it · museivaticani.va · basilicasanpietro.va · direzionemuseiroma.cultura.gov.it · italotreno.it · trenitalia.com · 酒店价格来自 Kayak/Booking/Momondo</div>
+  </footer>
+</div>
+
+<script src="leaflet.js"></script>
+<script>
+/* ============ 主题切换 ============ */
+(function(){
+  var saved = localStorage.getItem('theme');
+  var prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var theme = saved || (prefers ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+  function syncBtn(){ document.getElementById('themeBtn').textContent = (document.documentElement.getAttribute('data-theme')==='dark') ? '☀️' : '🌙'; }
+  syncBtn();
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    syncBtn();
+  });
+})();
+
+/* ============ 滚动进度条 + 导航高亮 ============ */
+(function(){
+  var bar = document.getElementById('progress');
+  var nav = document.getElementById('nav');
+  var links = nav.querySelectorAll('a');
+  window.addEventListener('scroll', function(){
+    var h = document.documentElement;
+    var sc = h.scrollTop / (h.scrollHeight - h.clientHeight);
+    bar.style.width = (sc*100) + '%';
+    var cur = 'overview';
+    links.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      var el = document.getElementById(id);
+      if(el && el.getBoundingClientRect().top <= 120) cur = id;
+    });
+    links.forEach(function(a){
+      a.classList.toggle('active', a.getAttribute('data-sec') === cur);
+    });
+  });
+})();
+
+/* ============ 数据 ============ */
+var BADGE = {
+  flight:['航班','bd-flight'], transport:['交通','bd-transport'], hotel:['住宿','bd-hotel'],
+  dining:['餐饮','bd-dining'], attraction:['景点','bd-attraction']
+};
+
+var DAYS = [
+ {n:1, d:'09-25', w:'周五', title:'抵达马德里 · 市中心精华', city:'马德里', sleep:'宿：马德里', items:[
+  {t:'01:30',k:'flight',x:'3U3803 四川航空 成都天府T1起飞（空客A350）'},
+  {t:'07:40',k:'flight',x:'落地马德里巴拉哈斯T1'},
+  {t:'08:30',k:'transport',x:'Cercanías C-1 线进城（约€2.60/25分钟）或机场快线（€5）'},
+  {t:'09:30',k:'hotel',x:'酒店寄存行李（Hotel Preciados 或 Catalonia Gran Vía，Sol区）'},
+  {t:'10:00',k:'hotel',x:'红眼航班后小憩 1–2 小时'},
+  {t:'12:00',k:'attraction',x:'太阳门广场（零公里地标）→ 马约尔广场'},
+  {t:'12:30',k:'dining',x:'午餐：圣米格尔市场 tapas（€3–8/份）'},
+  {t:'14:30',k:'attraction',x:'马德里王宫（€18，含皇家军械库）'},
+  {t:'17:00',k:'attraction',x:'东方广场、Sabatini 花园、阿尔穆德纳主座教堂外观'},
+  {t:'18:00',k:'attraction',x:'普拉多博物馆免费时段（周一至六 18–20 免费）'},
+  {t:'20:30',k:'dining',x:'晚餐：La Latina 区 Cava Baja 小吃街 / Casa Lucio（huevos rotos）'}
+ ]},
+ {n:2, d:'09-26', w:'周六', title:'马德里 → 巴塞罗那', city:'马德里→巴塞罗那', sleep:'宿：巴塞罗那', items:[
+  {t:'09:00',k:'attraction',x:'丽池公园（免费，水晶宫）；可选索菲亚王后（€12）'},
+  {t:'11:30',k:'dining',x:'午餐 menú del día（€12–18）'},
+  {t:'14:00',k:'transport',x:'前往阿托查站（可逛站内热带花园）'},
+  {t:'15:27',k:'transport',x:'高铁 → 巴塞罗那（已购，约5h44m）'},
+  {t:'21:11',k:'transport',x:'抵达 Sants 站，地铁至酒店'},
+  {t:'22:00',k:'hotel',x:'入住 Eixample（Room Mate Anna 或 H10 Metropolitan）'}
+ ]},
+ {n:3, d:'09-27', w:'周日', title:'巴塞罗那 · 圣家堂 + 老城区', city:'巴塞罗那', sleep:'宿：巴塞罗那', items:[
+  {t:'08:30',k:'attraction',x:'圣家堂（€26，务必提前 2–4 周官网预约）'},
+  {t:'11:00',k:'attraction',x:'哥特区、巴塞罗那主座教堂、加泰罗尼亚广场'},
+  {t:'13:00',k:'dining',x:'午餐：La Boqueria 市场或老城 tapas'},
+  {t:'15:00',k:'attraction',x:'兰布拉大道、El Born 区'},
+  {t:'18:00',k:'attraction',x:'Barceloneta 海滩 / 地中海日落'},
+  {t:'20:30',k:'dining',x:'晚餐：El Born 或哥特区'}
+ ]},
+ {n:4, d:'09-28', w:'周一', title:'巴塞罗那 · 高迪建筑日', city:'巴塞罗那', sleep:'宿：巴塞罗那', items:[
+  {t:'09:00',k:'attraction',x:'桂尔公园（€18，需提前官网购票）'},
+  {t:'12:00',k:'attraction',x:'米拉之家（€29 起，格拉西亚大道）'},
+  {t:'13:30',k:'dining',x:'午餐'},
+  {t:'15:00',k:'attraction',x:'巴特罗之家（€35 蓝票起）'},
+  {t:'17:00',k:'attraction',x:'格拉西亚大道自由活动'},
+  {t:'20:00',k:'dining',x:'晚餐：tapas（Cal Pep 或 Quimet i Quimet）'}
+ ]},
+ {n:5, d:'09-29', w:'周二', title:'巴塞罗那 · 蒙锥克山', city:'巴塞罗那', sleep:'宿：巴塞罗那', items:[
+  {t:'09:00',k:'attraction',x:'蒙锥克山观景（免费，缆车可选）；加泰罗尼亚国家艺术博物馆（€12）可选'},
+  {t:'12:00',k:'dining',x:'午餐'},
+  {t:'14:00',k:'attraction',x:'自由活动 / 海滩 / 购物，收拾行李'},
+  {t:'18:00',k:'dining',x:'晚餐，早睡（次日早班机）'}
+ ]},
+ {n:6, d:'09-30', w:'周三', title:'巴塞罗那 → 威尼斯', city:'巴塞罗那→威尼斯', sleep:'宿：威尼斯', items:[
+  {t:'08:00',k:'hotel',x:'退房'},
+  {t:'08:30',k:'transport',x:'Aerobús（€7.25）或地铁 L9 前往机场'},
+  {t:'09:30',k:'flight',x:'抵达 El Prat（提前 2 小时）'},
+  {t:'11:40',k:'flight',x:'飞威尼斯马可波罗机场（已购）'},
+  {t:'13:30',k:'flight',x:'抵达 VCE；ATVO 大巴（€10/20分钟）或 Alilaguna 水上巴士（€15/60分钟）进主岛'},
+  {t:'15:00',k:'hotel',x:'入住 Cannaregio（Hotel Cannaregio 2357 或 Ca\' Dogaressa）'},
+  {t:'15:30',k:'attraction',x:'里亚托桥、圣马可广场、叹息桥外观'},
+  {t:'18:00',k:'dining',x:'cicchetti 小吃（All\'Arco 或 Cantina Do Spade）'},
+  {t:'19:00',k:'attraction',x:'贡多拉（€90/30分钟，一船最多5人）'},
+  {t:'20:30',k:'dining',x:'晚餐：Cannaregio 海鲜'}
+ ]},
+ {n:7, d:'10-01', w:'周四', title:'威尼斯 → 佛罗伦萨', city:'威尼斯→佛罗伦萨', sleep:'宿：佛罗伦萨', items:[
+  {t:'08:30',k:'attraction',x:'圣马可大教堂（€10）'},
+  {t:'10:00',k:'attraction',x:'总督宫（€30官网提前30天/€35现场，含科雷尔博物馆）'},
+  {t:'12:30',k:'dining',x:'午餐：San Polo 区'},
+  {t:'14:00',k:'hotel',x:'取行李'},
+  {t:'15:00',k:'transport',x:'高铁 威尼斯S.L. → 佛罗伦萨S.M.N.（约2h13m，提前购约€18起）'},
+  {t:'17:30',k:'hotel',x:'入住 Hotel Palazzo dal Borgo（近火车站，有三/四人间）'},
+  {t:'18:30',k:'attraction',x:'圣母百花大教堂外观、老桥、领主广场'},
+  {t:'20:00',k:'attraction',x:'米开朗基罗广场看日落（免费）'},
+  {t:'20:30',k:'dining',x:'晚餐：Oltrarno 区（Osteria Santo Spirito）'}
+ ]},
+ {n:8, d:'10-02', w:'周五', title:'佛罗伦萨 · 艺术日', city:'佛罗伦萨', sleep:'宿：佛罗伦萨', items:[
+  {t:'08:30',k:'attraction',x:'学院美术馆（大卫像，€20，提前预约）'},
+  {t:'11:00',k:'attraction',x:'乌菲兹美术馆（€25当日/€29提前，提前预约）'},
+  {t:'13:30',k:'dining',x:'午餐：Mercato Centrale 中央市场 / Trattoria Mario（仅午餐）'},
+  {t:'15:00',k:'attraction',x:'布鲁内莱斯基穹顶登顶（€30通票，定时预约，463级）'},
+  {t:'17:00',k:'attraction',x:'老桥'},
+  {t:'19:00',k:'dining',x:'晚餐：bistecca alla fiorentina（T骨牛排）/ All\'Antico Vinaio 三明治（€6–10）'}
+ ]},
+ {n:9, d:'10-03', w:'周六', title:'比萨一日游', city:'佛罗伦萨⇄比萨', sleep:'宿：佛罗伦萨', items:[
+  {t:'08:30',k:'transport',x:'区域火车 佛罗伦萨 → 比萨中央站（约1小时，约€9）'},
+  {t:'10:00',k:'attraction',x:'奇迹广场：比萨斜塔登塔（€20，定时，提前官网预约）、主座教堂（免费）、洗礼堂外观'},
+  {t:'12:30',k:'dining',x:'午餐（避开广场正对游客店，进小镇吃）'},
+  {t:'14:00',k:'attraction',x:'小镇漫步'},
+  {t:'16:30',k:'transport',x:'火车返回佛罗伦萨'},
+  {t:'18:30',k:'dining',x:'晚餐'}
+ ]},
+ {n:10, d:'10-04', w:'周日', title:'五渔村 · 海边小镇一日游', city:'佛罗伦萨⇄五渔村', sleep:'宿：佛罗伦萨', items:[
+  {t:'07:30',k:'transport',x:'火车 佛罗伦萨 → 拉斯佩齐亚（约2小时）'},
+  {t:'09:30',k:'transport',x:'换乘五渔村小火车（五渔村火车卡 €22–29.50）'},
+  {t:'10:00',k:'attraction',x:'蒙特罗索 → 韦尔纳扎（海边悬崖村）'},
+  {t:'13:00',k:'dining',x:'午餐：韦尔纳扎海鲜 / 青酱意面(pesto) / 佛卡夏'},
+  {t:'14:00',k:'attraction',x:'里奥马焦雷 / 马纳罗拉'},
+  {t:'17:30',k:'transport',x:'返程 拉斯佩齐亚 → 佛罗伦萨'},
+  {t:'20:00',k:'dining',x:'晚餐'}
+ ]},
+ {n:11, d:'10-05', w:'周一', title:'佛罗伦萨 → 罗马', city:'佛罗伦萨→罗马', sleep:'宿：罗马', items:[
+  {t:'08:30',k:'hotel',x:'退房（周一乌菲兹/学院闭馆，正好赶路）'},
+  {t:'09:30',k:'transport',x:'高铁 佛罗伦萨 → 罗马特米尼（约1h25m，Italo €14.90起 / Frecciarossa €20起）'},
+  {t:'11:00',k:'hotel',x:'抵达罗马，酒店寄存（The Hive Hotel，近Termini）'},
+  {t:'12:00',k:'dining',x:'午餐'},
+  {t:'13:30',k:'attraction',x:'斗兽场 + 古罗马广场 + 帕拉蒂尼山（€18标准 / €24 Full Experience，提前30天预约）'},
+  {t:'17:30',k:'attraction',x:'万神殿（€7）、许愿池、西班牙广场、纳沃纳广场（免费）'},
+  {t:'20:00',k:'dining',x:'晚餐：Trastevere（Da Enzo al 29 或 Tonnarello）'}
+ ]},
+ {n:12, d:'10-06', w:'周二', title:'罗马 · 梵蒂冈', city:'罗马', sleep:'宿：罗马', items:[
+  {t:'07:30',k:'attraction',x:'梵蒂冈博物馆 + 西斯廷教堂（€25，预约8:00入场）'},
+  {t:'11:30',k:'attraction',x:'圣彼得大教堂（免费）+ 登穹顶（€8步行/€10电梯）'},
+  {t:'13:30',k:'dining',x:'午餐'},
+  {t:'15:00',k:'attraction',x:'圣天使堡外观、台伯河畔'},
+  {t:'17:30',k:'attraction',x:'特拉斯提弗列区漫步'},
+  {t:'19:30',k:'dining',x:'告别晚餐'}
+ ]},
+ {n:13, d:'10-07', w:'周三', title:'罗马返程', city:'罗马→成都', sleep:'航班过夜', items:[
+  {t:'08:00',k:'hotel',x:'起床、收拾行李'},
+  {t:'09:00',k:'hotel',x:'退房'},
+  {t:'09:30',k:'transport',x:'Leonardo Express → 菲乌米奇诺（€14，32分钟）'},
+  {t:'10:15',k:'flight',x:'抵达 FCO（提前约3小时）'},
+  {t:'13:05',k:'flight',x:'3U3896 起飞（空客A350）'},
+  {t:'05:25',k:'flight',x:'10-08 抵达成都天府T1'}
+ ]}
+];
+
+var TRANSPORT = [
+  {ic:'✈️',t:'去程 3U3803 四川航空',s:'成都天府T1 → 马德里巴拉哈斯T1 · 09-25 01:30–07:40 · 空客A350 · 约12h10m',booked:true},
+  {ic:'🚄',t:'高铁 马德里 → 巴塞罗那',s:'09-26 15:27–21:11',booked:true},
+  {ic:'✈️',t:'航班 巴塞罗那 → 威尼斯',s:'BCN → VCE 马可波罗 · 09-30 11:40–13:30',booked:true},
+  {ic:'✈️',t:'返程 3U3896 四川航空',s:'罗马菲乌米奇诺T3 → 成都天府T1 · 10-07 13:05 → 10-08 05:25 · 空客A350',booked:true}
+];
+
+var HOTELS = [
+  {city:'马德里', sub:'Sol 区 · 步行可达景点', list:[
+    {n:'Hotel Preciados', d:'4★ · 近太阳门广场', p:'€130–160'},
+    {n:'Catalonia Gran Vía', d:'4★ · 格兰大道', p:'€100–140'}]},
+  {city:'巴塞罗那', sub:'Eixample 扩展区 · 安全便利', list:[
+    {n:'Room Mate Anna', d:'4★设计 · 近巴特罗之家', p:'€125–170'},
+    {n:'H10 Metropolitan', d:'4★ · 加泰罗尼亚广场旁', p:'€120–160'},
+    {n:'Casa Bonay', d:'4★ · Eixample', p:'€145–200'}]},
+  {city:'威尼斯', sub:'Cannaregio 区 · 近火车站高性价比', list:[
+    {n:'Hotel Cannaregio 2357', d:'3★ · Cannaregio', p:'€90–130'},
+    {n:'Ca\' Dogaressa', d:'运河景民宿 · Cannaregio', p:'€110–150'}]},
+  {city:'佛罗伦萨', sub:'历史中心 · 近 S.M.N. 火车站', list:[
+    {n:'Hotel Palazzo dal Borgo', d:'4★ · 有三/四人间，适合3–4人', p:'€110–160'},
+    {n:'Hotel Pendini', d:'3★精品 · 近 Duomo', p:'€140–180'}]},
+  {city:'罗马', sub:'Termini / Monti · 近火车站与斗兽场', list:[
+    {n:'The Hive Hotel', d:'4★ · 近 Termini', p:'€110–150'},
+    {n:'Nerva Boutique Hotel', d:'4★ · Monti 近斗兽场（高端备选）', p:'€380+'}]}
+];
+
+var DINING = [
+  {city:'马德里', sub:'tapas · 油条巧克力', list:[
+    {n:'Mercado de San Miguel 圣米格尔市场', d:'tapas 拼盘', p:'€3–8/份'},
+    {n:'Chocolatería San Ginés', d:'油条蘸热巧克力（老字号）', p:'€5–8'},
+    {n:'Casa Lucio', d:'huevos rotos 招牌', p:'€25–40'},
+    {n:'La Latina · Cava Baja', d:'小吃街', p:'€15–30'}]},
+  {city:'巴塞罗那', sub:'tapas · 海鲜', list:[
+    {n:'La Boqueria 市场', d:'生鲜与小吃', p:'€5–15'},
+    {n:'Can Culleretes', d:'1786年老店', p:'€20–35'},
+    {n:'Cal Pep', d:'tapas', p:'€25–40'},
+    {n:'Quimet i Quimet', d:'罐头小吃配酒', p:'€15–25'}]},
+  {city:'威尼斯', sub:'cicchetti · 海鲜', list:[
+    {n:'All\'Arco', d:'bacaro 小食', p:'€2–4/份'},
+    {n:'Cantina Do Spade', d:'cicchetti + 葡萄酒', p:'€15–25'},
+    {n:'Cannaregio 海鲜餐厅', d:'海鲜', p:'€30–50'}]},
+  {city:'佛罗伦萨', sub:'T骨牛排 · 三明治', list:[
+    {n:'Trattoria Mario', d:'托斯卡纳家常菜（仅午餐）', p:'€15–25'},
+    {n:'All\'Antico Vinaio', d:'网红三明治', p:'€6–10'},
+    {n:'Mercato Centrale 中央市场', d:'美食广场', p:'€10–20'},
+    {n:'Osteria Santo Spirito', d:'Oltrarno 区', p:'€20–35'},
+    {n:'bistecca alla fiorentina', d:'T骨牛排（特色）', p:'€35–50'}]},
+  {city:'罗马', sub:'意面 · 披萨 · 冰淇淋', list:[
+    {n:'Da Enzo al 29', d:'Trastevere', p:'€25–40'},
+    {n:'Tonnarello', d:'Trastevere', p:'€15–25'},
+    {n:'Roscioli', d:'熟食+餐厅', p:'€25–40'},
+    {n:'Pizzarium/Bonci', d:'切块披萨', p:'€5–10'},
+    {n:'Gelateria del Teatro', d:'冰淇淋', p:'€3–6'}]},
+  {city:'比萨', sub:'一日游简餐', list:[
+    {n:'小镇 panino', d:'避开广场正对游客店', p:'€8–12'}]},
+  {city:'五渔村', sub:'海边小镇', list:[
+    {n:'韦尔纳扎/蒙特罗索', d:'青酱意面(pesto)、佛卡夏、凤尾鱼、海鲜', p:'€15–30'}]}
+];
+
+var TICKETS = [
+  {grp:'西班牙 · 巴塞罗那', items:[
+    {n:'圣家堂 Sagrada Família', d:'€26 基础 · €36 +登塔 · €30 导览 · €40 导览+登塔', p:'€26 起', book:true},
+    {n:'桂尔公园 Park Güell', d:'纪念区', p:'€18', book:true},
+    {n:'巴特罗之家 Casa Batlló', d:'蓝/银/金票', p:'€35/40/45'},
+    {n:'米拉之家 Casa Milà', d:'格拉西亚大道', p:'€29 起'}]},
+  {grp:'西班牙 · 马德里', items:[
+    {n:'普拉多博物馆', d:'每日闭馆前2小时免费（一至六18–20，日17–19）', p:'€15'},
+    {n:'马德里王宫', d:'含皇家军械库', p:'€18'},
+    {n:'索菲亚王后国家艺术中心', d:'每日闭馆前2小时免费', p:'€12'}]},
+  {grp:'意大利 · 威尼斯', items:[
+    {n:'圣马可大教堂', d:'基础入场（2025年起收费）', p:'€10'},
+    {n:'总督宫（圣马可广场博物馆联票）', d:'含科雷尔博物馆等', p:'€30/35', book:true},
+    {n:'贡多拉', d:'一船最多5人', p:'€90/30m · €110/35m夜'},
+    {n:'水上巴士 ACTV', d:'单次/日卡/两日/三日', p:'€9.50/25/35/45'}]},
+  {grp:'意大利 · 佛罗伦萨 / 比萨', items:[
+    {n:'比萨斜塔', d:'定时入场，含主座教堂；联票 €27', p:'€20', book:true},
+    {n:'乌菲兹美术馆', d:'周一闭馆；16点后 €16', p:'€25/29', book:true},
+    {n:'学院美术馆（大卫像）', d:'周一闭馆', p:'€20', book:true},
+    {n:'布鲁内莱斯基穹顶通票', d:'3日有效，登顶定时预约 463级', p:'€30', book:true}]},
+  {grp:'意大利 · 罗马', items:[
+    {n:'古罗马斗兽场', d:'含广场+帕拉蒂尼山', p:'€18 / €24', book:true},
+    {n:'梵蒂冈博物馆+西斯廷', d:'每月最后周日免费', p:'€20+€5=€25', book:true},
+    {n:'圣彼得大教堂登穹顶', d:'大教堂本身免费', p:'€8/€10'},
+    {n:'万神殿', d:'2026-07-01起由€5上调', p:'€7'}]}
+];
+
+var BUDGET = [
+  {k:'住宿', v:'€120–180/间 × 2间 × 12晚'},
+  {k:'景点门票', v:'约 €300–400/人'},
+  {k:'城际交通', v:'约 €100–150/人'},
+  {k:'市内交通', v:'约 €60–100/人'},
+  {k:'餐饮', v:'约 €40–70/人/天'},
+  {k:'总计（人均，不含机票）', v:'约 €1600–3000', total:true}
+];
+
+var MAP_POINTS = [
+  [1,'第1天 马德里',40.4168,-3.7038],
+  [2,'第2天 巴塞罗那',41.3851,2.1734],
+  [3,'第3天 巴塞罗那',41.3851,2.1734],
+  [4,'第4天 巴塞罗那',41.3851,2.1734],
+  [5,'第5天 巴塞罗那',41.3851,2.1734],
+  [6,'第6天 威尼斯',45.4408,12.3155],
+  [7,'第7天 佛罗伦萨',43.7696,11.2558],
+  [8,'第8天 佛罗伦萨',43.7696,11.2558],
+  [9,'第9天 比萨',43.7228,10.3966],
+  [10,'第10天 五渔村',44.1461,9.6545],
+  [11,'第11天 罗马',41.9028,12.4964],
+  [12,'第12天 罗马',41.9028,12.4964],
+  [13,'第13天 菲乌米奇诺',41.8003,12.2389]
+];
+
+/* ============ 渲染 ============ */
+function esc(s){ return s; }
+function renderTransport(){
+  document.getElementById('transportStrip').innerHTML = TRANSPORT.map(function(x){
+    return '<div class="tcard"><div class="ic">'+x.ic+'</div><div class="bd"><div class="t1">'+x.t+'</div><div class="t2">'+x.s+'</div></div>'+
+      (x.booked ? '<span class="badge-booked">已订</span>' : '')+'</div>';
+  }).join('');
+}
+function renderDays(){
+  document.getElementById('dayList').innerHTML = DAYS.map(function(d){
+    var items = d.items.map(function(it){
+      var b = BADGE[it.k] || ['',''];
+      return '<div class="tl-item"><div class="time">'+it.t+'</div><div class="txt"><span class="badge '+b[1]+'">'+b[0]+'</span>'+it.x+'</div></div>';
+    }).join('');
+    return '<div class="day-card" id="day-'+d.n+'">'+
+      '<div class="day-head" onclick="toggleDay('+d.n+')">'+
+        '<div class="dnum">'+d.n+'</div>'+
+        '<div class="dt"><div class="dtitle">Day '+d.n+' · '+d.d+' '+d.w+' — '+d.title+'</div>'+
+        '<div class="dmeta">'+d.city+'</div></div>'+
+        '<div class="darrow">▾</div>'+
+      '</div>'+
+      '<div class="day-body"><div class="day-body-inner">'+
+        '<div class="hotel-line">🏨 <b>'+d.sleep+'</b></div>'+
+        '<div class="tl">'+items+'</div>'+
+      '</div></div>'+
+    '</div>';
+  }).join('');
+}
+function toggleDay(n){
+  var card = document.getElementById('day-'+n);
+  var body = card.querySelector('.day-body');
+  var open = card.classList.contains('open');
+  if(open){ card.classList.remove('open'); body.style.maxHeight = '0'; }
+  else { card.classList.add('open'); body.style.maxHeight = body.scrollHeight + 'px'; }
+}
+function setAll(open){
+  DAYS.forEach(function(d){
+    var card = document.getElementById('day-'+d.n);
+    var body = card.querySelector('.day-body');
+    if(open){ card.classList.add('open'); body.style.maxHeight = body.scrollHeight + 'px'; }
+    else { card.classList.remove('open'); body.style.maxHeight = '0'; }
+  });
+}
+function renderHotels(){
+  document.getElementById('hotelList').innerHTML = HOTELS.map(function(c){
+    var items = c.list.map(function(h){
+      return '<div class="hotel-item"><div class="nm"><div class="n">'+h.n+'</div><div class="d">'+h.d+'</div></div><div class="pr">'+h.p+'</div></div>';
+    }).join('');
+    return '<div class="city-block"><h3>'+c.city+'</h3><div class="city-sub">'+c.sub+'</div>'+items+'</div>';
+  }).join('');
+}
+function renderDining(){
+  document.getElementById('dineList').innerHTML = DINING.map(function(c){
+    var items = c.list.map(function(h){
+      return '<div class="dine-item"><div class="nm"><div class="n">'+h.n+'</div><div class="d">'+h.d+'</div></div><div class="pr">'+h.p+'</div></div>';
+    }).join('');
+    return '<div class="city-block"><h3>'+c.city+'</h3><div class="city-sub">'+c.sub+'</div>'+items+'</div>';
+  }).join('');
+}
+function renderTickets(){
+  document.getElementById('ticketList').innerHTML = TICKETS.map(function(g){
+    var rows = g.items.map(function(t){
+      return '<div class="trow"><div class="tn"><div class="n">'+t.n+(t.book?'<span class="book-badge">提前预约</span>':'')+'</div><div class="d">'+t.d+'</div></div><div class="tp">'+t.p+'</div></div>';
+    }).join('');
+    return '<div class="ticket-group"><h3>'+g.grp+'</h3>'+rows+'</div>';
+  }).join('');
+}
+function renderBudget(){
+  document.getElementById('budgetList').innerHTML = BUDGET.map(function(b){
+    return '<div class="brow'+(b.total?' total':'')+'"><span class="bk">'+b.k+'</span><span class="bv">'+b.v+'</span></div>';
+  }).join('');
+}
+
+/* ============ 地图（多瓦片源 · 自动降级 + 手动切换） ============ */
+var PROVIDERS = [
+  {name:'OSM 标准', url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', sub:['a','b','c'], gcj:false, attr:'© OpenStreetMap'},
+  {name:'高德·国内', url:'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', sub:['1','2','3','4'], gcj:true, attr:'© 高德地图'},
+  {name:'Esri 备用', url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', sub:['a'], gcj:false, attr:'© Esri'}
+];
+
+/* GCJ-02 坐标转换（WGS-84 → 火星坐标，供高德瓦片使用） */
+function _tfLat(x,y){var r=-100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*Math.PI)+20*Math.sin(2*x*Math.PI))*2/3;r+=(20*Math.sin(y*Math.PI)+40*Math.sin(y/3*Math.PI))*2/3;r+=(160*Math.sin(y/12*Math.PI)+320*Math.sin(y*Math.PI/30))*2/3;return r;}
+function _tfLng(x,y){var r=300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*Math.PI)+20*Math.sin(2*x*Math.PI))*2/3;r+=(20*Math.sin(x*Math.PI)+40*Math.sin(x/3*Math.PI))*2/3;r+=(150*Math.sin(x/12*Math.PI)+300*Math.sin(x/30*Math.PI))*2/3;return r;}
+function wgs2gcj(lat,lng){
+  if(lng<72.004||lng>137.8347||lat<0.8293||lat>55.8271) return [lat,lng];
+  var a=6378245.0, ee=0.00669342162296594323;
+  var dLat=_tfLat(lng-105.0,lat-35.0), dLng=_tfLng(lng-105.0,lat-35.0);
+  var radLat=lat/180*Math.PI, magic=Math.sin(radLat);
+  magic=1-ee*magic*magic; var sM=Math.sqrt(magic);
+  dLat=(dLat*180)/((a*(1-ee))/(magic*sM)*Math.PI);
+  dLng=(dLng*180)/(a/sM*Math.cos(radLat)*Math.PI);
+  return [lat+dLat, lng+dLng];
+}
+
+var map, tileLayer, markerLayer, polylineLayer;
+var curTile = 0, autoBudget = PROVIDERS.length;
+
+function coordFor(p){ return PROVIDERS[curTile].gcj ? wgs2gcj(p[2],p[3]) : [p[2],p[3]]; }
+function dayIcon(n){ return L.divIcon({className:'', html:'<div class="marker-day">'+n+'</div>', iconSize:[26,26], iconAnchor:[13,13]}); }
+function gotoDay(n){
+  var card = document.getElementById('day-'+n);
+  if(card){
+    card.scrollIntoView({behavior:'smooth', block:'start'});
+    if(!card.classList.contains('open')) toggleDay(n);
+    setTimeout(function(){ card.classList.add('scrolled'); setTimeout(function(){card.classList.remove('scrolled');}, 1800); }, 400);
+  }
+}
+function rebuildOverlays(){
+  if(markerLayer) map.removeLayer(markerLayer);
+  if(polylineLayer) map.removeLayer(polylineLayer);
+  markerLayer = L.layerGroup();
+  polylineLayer = L.layerGroup();
+  var latlngs = [];
+  MAP_POINTS.forEach(function(p){
+    var c = coordFor(p);
+    latlngs.push(c);
+    var m = L.marker(c, {icon: dayIcon(p[0])});
+    m.bindPopup('<b>'+p[1]+'</b><br>点击查看当日行程');
+    m.on('click', function(){ gotoDay(p[0]); });
+    markerLayer.addLayer(m);
+  });
+  L.polyline(latlngs, {color:'#D95D39', weight:3, opacity:.85, dashArray:'5,8'}).addTo(polylineLayer);
+  markerLayer.addTo(map);
+  polylineLayer.addTo(map);
+}
+function updateTileBtns(){
+  for(var i=0;i<PROVIDERS.length;i++){
+    var b = document.getElementById('tb'+i);
+    if(b) b.classList.toggle('active', i === curTile);
+  }
+}
+function switchTile(i, isAuto){
+  i = ((i % PROVIDERS.length) + PROVIDERS.length) % PROVIDERS.length;
+  curTile = i;
+  if(!isAuto) autoBudget = PROVIDERS.length;
+  var p = PROVIDERS[i];
+  if(tileLayer) map.removeLayer(tileLayer);
+  var errCount = 0, advanced = false;
+  tileLayer = L.tileLayer(p.url, {attribution:p.attr, maxZoom:18, subdomains:p.sub}).addTo(map);
+  tileLayer.on('tileerror', function(){
+    if(advanced) return;
+    errCount++;
+    if(errCount >= 3){
+      advanced = true;
+      if(autoBudget > 0){ autoBudget--; switchTile(i + 1, true); }
+    }
+  });
+  rebuildOverlays();
+  updateTileBtns();
+  fitAll();
+}
+function fitAll(){
+  var pts = MAP_POINTS.map(coordFor);
+  map.fitBounds(L.latLngBounds(pts), {padding:[28,28]});
+}
+function initMap(){
+  map = L.map('map', {zoomControl:false, scrollWheelZoom:false});
+  switchTile(0);
+}
+
+/* ============ init ============ */
+renderTransport();
+renderDays();
+renderHotels();
+renderDining();
+renderTickets();
+renderBudget();
+if(window.L){ initMap(); }
+</script>
+</body>
+</html>
